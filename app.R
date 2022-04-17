@@ -7,35 +7,35 @@ options(shiny.maxRequestSize = 100 * 1024 ^ 2)
 
 ui = fluidPage(
     useShinyjs(),
-    titlePanel(h3(tags$b("Konwersja kanału termalnego Landsat 8 na stopnie Celsjusza"), align = "center")),
+    titlePanel(h3(tags$b("Landsat 8 (Level 1) thermal band conversion to Celsius degrees"), align = "center")),
     sidebarLayout(
         sidebarPanel(
             tags$style(".well {background-color: #dddddd;}"),
-            fileInput(inputId = "plik_tif", label = "kanał termalny B10 (.TIF)", buttonLabel = "wybierz...",
+            fileInput(inputId = "plik_tif", label = "thermal band B10 (.TIF)", buttonLabel = "wybierz...",
                       multiple = FALSE, accept = c(".TIF", ".tif")),
             #helpText("Uwaga! Pobierz plik z poziomu 1."),
-            fileInput(inputId = "plik_mtl", label = "plik MTL (.txt)", buttonLabel = "wybierz...",
+            fileInput(inputId = "plik_mtl", label = "MTL file (.txt)", buttonLabel = "wybierz...",
                       multiple = FALSE, accept = c(".txt")),
-            fileInput(inputId = "plik_shp", label = "plik wektorowy maski (.shp/.gpkg)",
+            fileInput(inputId = "plik_shp", label = "vector mask (.shp/.gpkg)",
                       buttonLabel = "wybierz...", multiple = FALSE, accept = c(".shp", ".gpkg")),
-            span(helpText("Maksymalna wielkość plików: 100MB"), style = "text-align: center"),
+            span(helpText("Max. file size: 100MB"), style = "text-align: center"),
             hr(style = "border-color: #aaaaaa"),
-            disabled(numericInput(inputId = "bufor", label = "promień bufora maski w km", value = 0)),
+            disabled(numericInput(inputId = "bufor", label = "radius of mask buffer in km", value = 0)),
             disabled(
-              span(checkboxInput(inputId = "show_mask", label = "wyświetl granicę maski", value = FALSE),
+              span(checkboxInput(inputId = "show_mask", label = "show mask boundary", value = FALSE),
                    style = "text-align: center")
             ),
             disabled(
-              span(checkboxInput(inputId = "bbox", label = "maska jako bounding box", value = FALSE),
+              span(checkboxInput(inputId = "bbox", label = "mask as bounding box", value = FALSE),
                    style = "text-align: center")
             ),
-            numericInput(inputId = "bbox_mult", label = "mnożnik wymiarów b-boxa maski", value = 1.5),
+            numericInput(inputId = "bbox_mult", label = "multiply mask bounding box by:", value = 1.5),
             hr(style = "border-color: #aaaaaa"),
-            actionButton(inputId = "oblicz", label = "Oblicz",
+            actionButton(inputId = "oblicz", label = "Run",
                          style = "background-color: forestgreen; width: 100%; font-size: 20px"),
-            actionButton(inputId = "zapisz", label = "Zapisz",
+            actionButton(inputId = "zapisz", label = "Save",
                          style = "background-color: gray; width: 100%; font-size: 20px"),
-            downloadButton(outputId = "pobierz", label = "Pobierz .tif",
+            downloadButton(outputId = "pobierz", label = "Save .tif",
                            style = "background-color: gray; width: 100%; font-size: 20px"),
             hr(style = "border-color: #aaaaaa"),
             span(textOutput("info_zapis"), style = "color: forestgreen; text-align: center"),
@@ -78,31 +78,31 @@ server = function(input, output) {
                    mtl_name(input$plik_mtl$datapath)
                    if (identical(str_detect(input$plik_tif$datapath, ".TIF$|.tif$"), logical(0))){
                      showModal(modalDialog(
-                       title = "Brak pliku rastrowego!",
-                       paste("Wprowadź plik o rozszerzeniu .tif lub .TIF"),
+                       title = "No raster file provided!",
+                       paste("Select .tif or .TIF file"),
                        easyClose = TRUE,
                        footer = NULL
                      ))
                    } else if (!str_detect(input$plik_tif$datapath, ".TIF$|.tif$") && !identical(str_detect(input$plik_tif$datapath, ".TIF$|.tif$"), logical(0))){
                      showModal(modalDialog(
-                       title = "Zły format pliku rastrowego!",
-                       paste("Wprowadź plik o rozszerzeniu .tif lub .TIF"),
+                       title = "Wrong format of raster file!",
+                       paste("Select .tif or .TIF file"),
                        easyClose = TRUE,
                        footer = NULL
                      ))
                      B10(NULL)
                    } else if (!str_detect(input$plik_mtl$datapath, ".txt$") && !identical(str_detect(input$plik_mtl$datapath, ".txt$"), logical(0))){
                      showModal(modalDialog(
-                       title = "Zły format pliku MTL!",
-                       paste("Wprowadź plik o rozszerzeniu .txt"),
+                       title = "Wrong format of MTL file!",
+                       paste("Select .txt file"),
                        easyClose = TRUE,
                        footer = NULL
                      ))
                      mtl_name(NULL)
                    } else if (!str_detect(input$plik_shp$datapath, ".shp$|.gpkg$") && !identical(str_detect(input$plik_shp$datapath, ".shp$|.gpkg$"), logical(0))){
                      showModal(modalDialog(
-                       title = "Zły format pliku wektorowego maski!",
-                       paste("Wprowadź plik o rozszerzeniu .shp lub .gpkg"),
+                       title = "Wrong format of vector mask file!",
+                       paste("Select .shp or .gpkg file"),
                        easyClose = TRUE,
                        footer = NULL
                      ))
@@ -168,7 +168,7 @@ server = function(input, output) {
             data = format(as.Date(data), "%d.%m.%Y")
 
             terra::plot(map, col = hcl.colors(10, palette = "RdYlGn", rev = TRUE),
-                        plg = list(title = "[°C]"), main = str_c("Data:  ", data))
+                        plg = list(title = "[°C]"), main = str_c("Date:  ", data))
             if (input$show_mask == TRUE){
               lines(granica, lwd = 2.5, col = "#333333")
             }
@@ -178,7 +178,7 @@ server = function(input, output) {
     output$stats = renderText(
         {
           req(srednia(), minimum(), maksimum())
-          paste("Średnia:", srednia(), "°C", "\nMinimum:", minimum(), "°C", "\nMaksimum:", maksimum(), "°C")
+          paste("Mean:", srednia(), "°C", "\nMinimum:", minimum(), "°C", "\nMaximum:", maksimum(), "°C")
         }
     )
 
@@ -187,8 +187,8 @@ server = function(input, output) {
         if (czy_export() == 1){
           req(rast_export())
           val = values(rast_export())
-          hist(val, main = "Rozkład wartości temperatury", xlab = "temperatura w °C",
-               ylab = "liczba wystąpień", col = hcl.colors(20, palette = "RdYlGn", rev = TRUE),
+          hist(val, main = "Histogram", xlab = "temperatura w °C",
+               ylab = "count", col = hcl.colors(20, palette = "RdYlGn", rev = TRUE),
                breaks = c(seq(min(val, na.rm = TRUE), max(val, na.rm = TRUE),
                               (max(val, na.rm = TRUE) - min(val, na.rm = TRUE)) / 19)),
                border = FALSE)
@@ -201,9 +201,9 @@ server = function(input, output) {
                    if (czy_export() == 1){
                      writeRaster(rast_export(), paste0("B10_converted_", date(), ".tif"), overwrite = TRUE)
                      info2("")
-                     info(paste0("Zapisano do pliku B10_converted_", date(), ".tif"))
+                     info(paste0("Saved to B10_converted_", date(), ".tif"))
                    } else{
-                     info2("Brak danych do zapisania!")
+                     info2("No data to save!")
                    }
                  }
     )
@@ -216,9 +216,9 @@ server = function(input, output) {
         if (czy_export() == 1){
           writeRaster(rast_export(), paste0("B10_converted_", date(), ".tif"), overwrite = TRUE)
           info2("")
-          info(paste0("Zapisano do pliku B10_converted_", date(), ".tif"))
+          info(paste0("Saved to B10_converted_", date(), ".tif"))
         } else{
-          info2("Brak danych do zapisania!")
+          info2("No data to save!")
         }
       }
     )
