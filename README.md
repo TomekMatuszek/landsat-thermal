@@ -11,7 +11,7 @@ There are some additional options such as:
 
 ## How to use
 
-### Run app in RStudio by GitHub and Shiny package
+### Run app in RStudio from GitHub repo using Shiny package
 ```r
 shiny::runGitHub("landsat-thermal", "TomekMatuszek")
 ```
