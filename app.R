@@ -3,6 +3,7 @@ library(shinyjs)
 library(shinyWidgets)
 library(terra)
 library(stringr)
+library(ggplot2)
 options(shiny.maxRequestSize = 100 * 1024 ^ 2)
 
 ui = fluidPage(
@@ -30,6 +31,8 @@ ui = fluidPage(
                    style = "text-align: center")
             ),
             numericInput(inputId = "bbox_mult", label = "multiply mask bounding box by:", value = 1.5),
+            span(checkboxInput(inputId = "log", label = "logarythmic Y-axis of histogram", value = FALSE),
+                 style = "text-align: center"),
             hr(style = "border-color: #aaaaaa"),
             actionButton(inputId = "oblicz", label = "Run",
                          style = "background-color: forestgreen; width: 100%; font-size: 20px"),
@@ -51,6 +54,7 @@ ui = fluidPage(
 )
 
 server = function(input, output) {
+    options(warn=-1)
     B10 = reactiveVal(NULL)
     mask_name = reactiveVal(NULL)
     mtl_name = reactiveVal(NULL)
@@ -187,11 +191,20 @@ server = function(input, output) {
         if (czy_export() == 1){
           req(rast_export())
           val = values(rast_export())
-          hist(val, main = "Histogram", xlab = "temperatura w °C",
-               ylab = "count", col = hcl.colors(20, palette = "RdYlGn", rev = TRUE),
-               breaks = c(seq(min(val, na.rm = TRUE), max(val, na.rm = TRUE),
-                              (max(val, na.rm = TRUE) - min(val, na.rm = TRUE)) / 19)),
-               border = FALSE)
+          # hist(val, main = "Histogram", xlab = "temperatura w °C",
+          #      ylab = "count", col = hcl.colors(20, palette = "RdYlGn", rev = TRUE),
+          #      breaks = c(seq(min(val, na.rm = TRUE), max(val, na.rm = TRUE),
+          #                     (max(val, na.rm = TRUE) - min(val, na.rm = TRUE)) / 19)),
+          #      border = FALSE)
+          p = ggplot(as.data.frame(val), aes(x = val)) +
+            geom_histogram(fill = hcl.colors(20, palette = "RdYlGn", rev = TRUE), bins = 20) +
+            labs(title = "Histogram", x = "temperatura w °C") +
+            theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+            theme_bw()
+          if (input$log == TRUE){
+            p = p + scale_y_log10()
+          }
+          return(p)
         }
       }
     )
